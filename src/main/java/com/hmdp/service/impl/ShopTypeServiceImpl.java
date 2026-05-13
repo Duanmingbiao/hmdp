@@ -37,7 +37,7 @@ public class ShopTypeServiceImpl extends ServiceImpl<ShopTypeMapper, ShopType> i
         }
         List<ShopType> list = lambdaQuery().orderByAsc(ShopType::getSort).list();
         stringRedisTemplate.opsForValue().set(RedisConstants.SHOP_TYPE, JSONUtil.toJsonStr(list));
-        stringRedisTemplate.expire(RedisConstants.SHOP_TYPE, 60000L, TimeUnit.MINUTES);
+        stringRedisTemplate.expire(RedisConstants.SHOP_TYPE, 36000L, TimeUnit.MINUTES);
         return Result.ok(list);
     }
 }
