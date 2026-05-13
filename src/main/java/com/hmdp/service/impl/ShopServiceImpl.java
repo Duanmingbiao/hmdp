@@ -11,6 +11,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
+import java.util.concurrent.TimeUnit;
+
 import static com.hmdp.utils.RedisConstants.CACHE_SHOP_KEY;
 
 /**
@@ -39,6 +41,7 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
            return Result.fail("店铺不存在");
         }
         stringRedisTemplate.opsForValue().set(CACHE_SHOP_KEY + id, JSONUtil.toJsonStr(shop_k));
+        stringRedisTemplate.expire(CACHE_SHOP_KEY + id, 60000L, TimeUnit.MINUTES);
         return Result.ok(shop_k);
     }
 }
