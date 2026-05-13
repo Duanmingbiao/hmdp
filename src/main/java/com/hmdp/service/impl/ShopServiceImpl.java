@@ -1,10 +1,17 @@
 package com.hmdp.service.impl;
 
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.json.JSONUtil;
+import com.hmdp.dto.Result;
 import com.hmdp.entity.Shop;
 import com.hmdp.mapper.ShopMapper;
 import com.hmdp.service.IShopService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
+
+import static com.hmdp.utils.RedisConstants.CACHE_SHOP_KEY;
 
 /**
  * <p>
@@ -16,5 +23,22 @@ import org.springframework.stereotype.Service;
  */
 @Service
 public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IShopService {
+    @Autowired
+    private StringRedisTemplate stringRedisTemplate;
 
+    @Override
+    public Result queryById(Long id) {
+        String shopBean = stringRedisTemplate.opsForValue().get(CACHE_SHOP_KEY + id);
+        if(StrUtil.isNotBlank(shopBean)){
+            Shop shop = JSONUtil.toBean(shopBean, Shop.class);
+            return Result.ok(shop);
+        }
+        Shop shop_k = getById(id);
+        System.out.println(shop_k);
+        if(shop_k == null ){
+           return Result.fail("店铺不存在");
+        }
+        stringRedisTemplate.opsForValue().set(CACHE_SHOP_KEY + id, JSONUtil.toJsonStr(shop_k));
+        return Result.ok(shop_k);
+    }
 }
