@@ -36,9 +36,13 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
             Shop shop = JSONUtil.toBean(shopBean, Shop.class);
             return Result.ok(shop);
         }
+        if(shopBean != null ){
+            return Result.fail("店铺不存在");
+        }
         Shop shop_k = getById(id);
         System.out.println(shop_k);
         if(shop_k == null ){
+            stringRedisTemplate.opsForValue().set(CACHE_SHOP_KEY + id, "", 60L, TimeUnit.SECONDS);
            return Result.fail("店铺不存在");
         }
         stringRedisTemplate.opsForValue().set(CACHE_SHOP_KEY + id, JSONUtil.toJsonStr(shop_k));
