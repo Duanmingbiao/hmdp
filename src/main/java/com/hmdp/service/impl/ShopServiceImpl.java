@@ -31,25 +31,48 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
 
     @Override
     public Result queryById(Long id) {
+        Shop shop = queryWithPassThrough(id);
+        return Result.ok(shop);
+    }
+    private Shop queryWithPassThrough(Long id) {
         String shopBean = stringRedisTemplate.opsForValue().get(CACHE_SHOP_KEY + id);
         if(StrUtil.isNotBlank(shopBean)){
-            Shop shop = JSONUtil.toBean(shopBean, Shop.class);
-            return Result.ok(shop);
+            return JSONUtil.toBean(shopBean, Shop.class);
         }
         if(shopBean != null ){
-            return Result.fail("店铺不存在");
+            return null;
         }
-        Shop shop_k = getById(id);
-        System.out.println(shop_k);
-        if(shop_k == null ){
-            stringRedisTemplate.opsForValue().set(CACHE_SHOP_KEY + id, "", 60L, TimeUnit.SECONDS);
-           return Result.fail("店铺不存在");
+        String lockKey = "lock:shop:" + id;
+        try {
+            Boolean ishas = tryLock(lockKey);
+            if(!ishas){
+                Thread.sleep(500);
+                return queryWithPassThrough(id);
+            }
+            Shop shop_k = getById(id);
+            System.out.println(shop_k);
+            if(shop_k == null ){
+                stringRedisTemplate.opsForValue().set(CACHE_SHOP_KEY + id, "", 60L, TimeUnit.SECONDS);
+                return null;
+            }
+            stringRedisTemplate.opsForValue().set(CACHE_SHOP_KEY + id, JSONUtil.toJsonStr(shop_k));
+            stringRedisTemplate.expire(CACHE_SHOP_KEY + id, 36000L, TimeUnit.MINUTES);
+            return shop_k;
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        } finally {
+            unLock(lockKey);
         }
-        stringRedisTemplate.opsForValue().set(CACHE_SHOP_KEY + id, JSONUtil.toJsonStr(shop_k));
-        stringRedisTemplate.expire(CACHE_SHOP_KEY + id, 36000L, TimeUnit.MINUTES);
-        return Result.ok(shop_k);
     }
-
+    private Boolean tryLock(String key){
+        /*
+        setIfAbsent设置成功就为true，已经有或者设置失败就为 false
+         */
+        return stringRedisTemplate.opsForValue().setIfAbsent("lock"+ key, "1", 10L, TimeUnit.SECONDS);
+    }
+    private void unLock(String key){
+        stringRedisTemplate.delete("lock"+ key);
+    }
     @Override
     @Transactional
     public Result updata(Shop shop) {
