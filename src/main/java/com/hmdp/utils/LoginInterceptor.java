@@ -24,8 +24,9 @@ public class LoginInterceptor implements HandlerInterceptor {
     private StringRedisTemplate stringRedisTemplate;
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
-        System.out.println("拦截器2执行了");
+
         if(UserHolder.getUser() ==  null){
+            System.out.println("拦截器2执行了");
             return false;
         }
         return true;
