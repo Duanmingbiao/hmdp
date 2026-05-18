@@ -80,7 +80,7 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
         boolean update = seckillVoucherService.lambdaUpdate()
                 .set(SeckillVoucher::getStock, voucher.getStock() - 1)
                 .eq(SeckillVoucher::getVoucherId, voucherId)
-                .eq(SeckillVoucher::getStock, voucher.getStock())  // CAS 乐观锁
+                .eq(SeckillVoucher::getStock, voucher.getStock() > 0)  // CAS 乐观锁
                 .update();
         if (!update) {
             log.warn("库存扣减失败，券ID:{}", voucherId);
@@ -94,7 +94,6 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
         voucherOrder.setUserId(userId);
         voucherOrder.setVoucherId(voucherId);
         save(voucherOrder);
-
         log.info("用户{}秒杀成功，订单ID:{}", userId, orderId);
         return orderId;
     }
